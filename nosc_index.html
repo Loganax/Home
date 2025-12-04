@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indice - NOSC TTP</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<div class="print-buttons">
+    <button onclick="printCurrentPage()" class="btn-print">
+        <span class="btn-icon">📄</span> Stampa Pagina
+    </button>
+    <button onclick="printManual()" class="btn-print btn-manual">
+        <span class="btn-icon">📚</span> Stampa Manuale
+    </button>
+</div>
+<!-- HTML - Da inserire prima del closing </body> in ogni pagina -->
+<div class="print-buttons">
+    <button onclick="printCurrentPage()" class="btn-print">
+        <span class="btn-icon">📄</span> Stampa Pagina
+    </button>
+    <button onclick="printManual()" class="btn-print btn-manual">
+        <span class="btn-icon">📚</span> Stampa Manuale
+    </button>
+</div>
+<script>
+// Funzione per stampare la pagina corrente (converte in PDF)
+function printCurrentPage() {
+    window.print();
+}
+
+// Funzione per stampare l'intero manuale
+function printManual() {
+    // Array con tutte le pagine del manuale in ordine
+    const pages = [
+        'index.html',
+        'nosc_index.html',
+        'lime_acquisition.html'
+        // Aggiungi qui altre pagine future
+    ];
+    
+    // Crea una nuova finestra
+    const printWindow = window.open('', '_blank');
+    
+    // Inizializza il documento
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="it">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>NOSC - Manuale Completo</title>
+            <link rel="stylesheet" href="style.css">
+            <style>
+                @media print {
+                    .print-buttons { display: none !important; }
+                }
+            </style>
+        </head>
+        <body>
+    `);
+    
+    // Variabile per tracciare le pagine caricate
+    let loadedPages = 0;
+    
+    // Carica e aggiungi ogni pagina
+    pages.forEach((page, index) => {
+        fetch(page)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP error! status: ' + response.status);
+                }
+                return response.text();
+            })
+            .then(html => {
+                // Estrai il contenuto della pagina
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Cerca sia .page che .cover-page
+                let pageContent = doc.querySelector('.page') || doc.querySelector('.cover-page');
+                
+                if (pageContent) {
+                    // Rimuovi i bottoni di stampa se presenti
+                    const buttons = pageContent.querySelector('.print-buttons');
+                    if (buttons) buttons.remove();
+                    
+                    printWindow.document.body.innerHTML += pageContent.outerHTML;
+                }
+                
+                loadedPages++;
+                
+                // Quando tutte le pagine sono caricate, stampa
+                if (loadedPages === pages.length) {
+                    printWindow.document.write('</body></html>');
+                    printWindow.document.close();
+                    
+                    // Attendi che le risorse siano caricate prima di stampare
+                    setTimeout(function() {
+                        printWindow.print();
+                    }, 1000);
+                }
+            })
+            .catch(error => {
+                console.error('Errore nel caricamento di ' + page + ':', error);
+                alert('Impossibile caricare ' + page + '. Assicurati che i file siano serviti da un web server locale (es: python -m http.server o Live Server in VSCode)');
+                loadedPages++;
+                
+                // Se tutte le pagine sono state tentate (anche con errori)
+                if (loadedPages === pages.length) {
+                    printWindow.document.write('</body></html>');
+                    printWindow.document.close();
+                }
+            });
+    });
+}
+</script>
+<body>
+    <div class="page">
+        <div class="page-header">
+            <h1>INDICE</h1>
+            <div class="breadcrumb">NOSC - Tecniche Tattiche e Procedure</div>
+        </div>
+        
+        <div class="page-content">
+            <ul class="index-list">
+                <li>
+                    <a href="lime_acquisition.html">1. Acquisizione Forense di Memoria RAM con LiME</a>
+                    <div class="description">
+                        Procedura step-by-step per l'acquisizione della memoria RAM su sistemi Linux utilizzando Linux Memory Extractor
+                    </div>
+                </li>
+                
+                <!-- Placeholder per futuri argomenti -->
+                <!--
+                <li>
+                    <a href="#">2. [Prossimo argomento]</a>
+                    <div class="description">
+                        Descrizione del prossimo argomento
+                    </div>
+                </li>
+                -->
+            </ul>
+        </div>
+        
+        <div class="page-footer">
+            NOSC - Manuale di Informatica Forense | Pagina Indice
+        </div>
+    </div>
+</body>
+</html>
